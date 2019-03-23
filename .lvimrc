@@ -1,0 +1,2 @@
+let g:amake_run = 'python -m genRss.py'
+let g:amake_test = 'tox'
