@@ -172,7 +172,7 @@ def main():
         print("\n    Select format_id from [{}]".format(", ".join(FORMATS.keys())))
         sys.exit(1)
 
-    url, series_name, format_key = sys.argv[1:]
+    url, series_name, format_key = sys.argv[1], sys.argv[2], sys.argv[3]
     try:
         os.mkdir("rss")
     except OSError:

@@ -10,9 +10,9 @@ import pytest
 
 import vid
 
-
 OGN_REASON = 'Skipped because it is very long. To enable set ALL_TESTS=True'
 LONG_TEST = pytest.mark.skipif(not os.environ.get('ALL_TESTS'), reason=OGN_REASON)
+
 
 def test_parse_info():
     fname = glob.glob('tests/media/Critical Role _ Campaign 1/*.info.json')[0]

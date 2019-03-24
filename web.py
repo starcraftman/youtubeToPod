@@ -14,12 +14,12 @@ app.config.RESPONSE_TIMEOUT = 600  # Downloading takes long
 
 
 @app.route("/rss/<series>.rss")
-async def get_rss(request, series):
+async def get_rss(_, series):
     return await sanic.response.file('rss/{}.rss'.format(series))
 
 
 @app.route("/video/<series>/<episode>.mp4")
-async def get_video(request, series, episode):
+async def get_video(_, series, episode):
     episode = int(episode) - 1
     fname = sorted(glob.glob("media/{}/*.info.json".format(series)))[episode]
     info = vid.parse_info(fname)
