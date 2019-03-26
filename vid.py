@@ -1,6 +1,7 @@
 """
 Script to convert & create the podgen RSS to be served.
 """
+import argparse
 import datetime
 import glob
 import json
@@ -66,6 +67,17 @@ def fetch_playlist_info(url, folder, format_id=FORMATS["medium"]):
     youtube_download(url, opts_update=opts_update, playlist=folder)
 
 
+def prune_playlist_info(fnames):
+    """
+    Prune the playlist metadata to ONLY the required information.
+    """
+    for fname in fnames:
+        info = parse_info(fname)
+
+        with open(fname, 'w') as fout:
+            json.dump(info, fout, separators=(',', ':'))
+
+
 def fetch_video(url, format_id):
     """
     Args:
@@ -94,6 +106,10 @@ def parse_info(fname):
                  "playlist", "playlist_index", "filesize", "format", "fulltitle"]
     for key in set(info.keys()) - set(keep_keys):
         del info[key]
+
+    for fmt_val in info["formats"][:]:
+        if fmt_val["format_id"] not in FORMATS.values():
+            info["formats"].remove(fmt_val)
 
     return info
 
@@ -128,9 +144,8 @@ def shorten_to_len(text, max_len):
     return shorter_text.rstrip()
 
 
-def parse_episodes(folder, series_name, format_id):
+def parse_episodes(fnames, series_name, format_id):
     episodes = []
-    fnames = sorted(glob.glob(folder + '/*'))
 
     for fname in fnames:
         info = parse_info(fname)
@@ -144,7 +159,6 @@ def parse_episodes(folder, series_name, format_id):
         )
         episode = podgen.Episode(
             title=info["title"],
-            position=info['playlist_index'],
             image=info["thumbnail"],
             summary=shorten_to_len(info["description"], SUMMARY_LEN),
             long_summary=info["description"],
@@ -156,33 +170,74 @@ def parse_episodes(folder, series_name, format_id):
     return episodes
 
 
-def create_podcast(episodes, series_name):
+def create_podcast(episodes, series_name, title=None, description=None, persons=None):
+    """
+    Create a podcast based on the episodes & required information.
+    """
     episode = episodes[0]
-    pod = podgen.Podcast(name=episode.title, description=episode.long_summary,
+    if not title:
+        title = episode.title
+    if not description:
+        description = episode.summary
+
+    pod = podgen.Podcast(name=title, description=description,
                          website="http://starcraftman.com/rss/{}.rss".format(series_name),
-                         explicit=False, image=episode.image, language="EN")
+                         explicit=True, image=episode.image, language="EN")
     pod.episodes += episodes
+
+    if persons:
+        pod.authors = persons
+        pod.owner = persons[0]
 
     return pod
 
 
-def main():
-    if len(sys.argv) != 4 or sys.argv[-1] not in FORMATS.keys():
-        print("Usage: {} youtube_playlist series_name format_id".format(sys.argv[0]))
-        print("\n    Select format_id from [{}]".format(", ".join(FORMATS.keys())))
-        sys.exit(1)
+def create_parser():
+    """
+    Generate a simple command line parser.
+    """
+    prog = 'python ./' + sys.argv[0]
+    desc = """Generate a RSS feed based on a youtube playlist.
 
-    url, series_name, format_key = sys.argv[1], sys.argv[2], sys.argv[3]
+{prog} URL series_name format_id
+        Generate an RSS feed for URL, store metadata in series_name for retrieval.
+        Select audio, medium or high for format_id.
+{prog} URL series_name format_id --title A title --description A description for podcast
+        Same as above, manually override the title and description of the podcast.
+    """.format(prog=prog)
+
+    parser = argparse.ArgumentParser(prog=prog, description=desc,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('url', help='The youtube playlist.')
+    parser.add_argument('series_name', help='The short name of the series (storage).')
+    parser.add_argument('format', choices=FORMATS.keys(), help='The format to fetch.')
+    parser.add_argument('-t', '--title', nargs='+', default=None, help='The title of the podcast.')
+    parser.add_argument('-d', '--description', nargs='+', default=None, help='The short description of podcast.')
+
+    return parser
+
+
+def main():
+    parser = create_parser()
+    args = parser.parse_args()
+
     try:
         os.mkdir("rss")
     except OSError:
         pass
 
-    fetch_playlist_info(url, series_name)
-    episodes = parse_episodes("media/{}/".format(series_name), series_name, FORMATS[format_key])
-    pod = create_podcast(episodes, series_name)
+    fetch_playlist_info(args.url, args.series_name)
 
-    fname = 'rss/{}.rss'.format(series_name)
+    info_files = sorted(glob.glob("media/{}/*.info.json*".format(args.series_name)))
+    prune_playlist_info(info_files)
+    episodes = parse_episodes(info_files, args.series_name, FORMATS[args.format])
+
+    info = parse_info(info_files[0])
+    persons = [podgen.Person(info['uploader'], 'N/A')]
+    pod = create_podcast(episodes, args.series_name, title=args.title,
+                         description=args.description, persons=persons)
+
+    fname = 'rss/{}.rss'.format(args.series_name)
     pod.rss_file(fname)
     print('RSS file written to: ' + fname)
 

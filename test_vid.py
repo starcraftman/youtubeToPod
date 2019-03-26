@@ -21,7 +21,8 @@ def test_parse_info():
 
 
 def test_parse_episodes():
-    eps = vid.parse_episodes('tests/media/Critical Role _ Campaign 1', 'criticalrole', vid.FORMATS['medium'])
+    fnames = glob.glob('tests/media/Critical Role _ Campaign 1/*.info.json')
+    eps = vid.parse_episodes(fnames, 'critical', vid.FORMATS['medium'])
 
     assert len(eps) == 140
     assert isinstance(eps[0], podgen.Episode)
