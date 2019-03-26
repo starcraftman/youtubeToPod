@@ -220,6 +220,10 @@ def create_parser():
 def main():
     parser = create_parser()
     args = parser.parse_args()
+    if args.title:
+        args.title = " ".join(args.title)
+    if args.description:
+        args.description = " ".join(args.description)
 
     try:
         os.mkdir("rss")
