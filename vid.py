@@ -41,9 +41,9 @@ def youtube_download(url, opts_update=None, playlist=None):
         "progress_hooks": [ydl_hook],
     }
     """
-    output_template = "media/%(title)s.mp4"
+    output_template = "web/media/%(id)s.mp4"
     if playlist:
-        output_template = "media/{}/%(playlist_index)s - %(title)s.mp4".format(playlist)
+        output_template = "web/media/{}/%(playlist_index)s - %(title)s.mp4".format(playlist)
 
     ydl_opts = {
         "format": "140",
@@ -227,7 +227,7 @@ def main():
 
     fetch_playlist_info(args.url, args.series_name)
 
-    info_files = sorted(glob.glob("media/{}/*.info.json*".format(args.series_name)))
+    info_files = sorted(glob.glob("web/media/{}/*.info.json*".format(args.series_name)))
     prune_playlist_info(info_files)
     episodes = create_episodes(info_files, args.series_name, FORMATS[args.format])
 
@@ -236,7 +236,7 @@ def main():
     pod = create_podcast(episodes, args.series_name, title=args.title,
                          description=args.description, persons=persons)
 
-    fname = 'rss/{}.rss'.format(args.series_name)
+    fname = 'web/rss/{}.rss'.format(args.series_name)
     pod.rss_file(fname)
     print('RSS file written to: ' + fname)
 
