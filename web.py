@@ -22,7 +22,7 @@ async def get_rss(_, series):
 async def get_video(_, series, episode):
     episode = int(episode) - 1
     fname = sorted(glob.glob("media/{}/*.info.json".format(series)))[episode]
-    info = vid.parse_info(fname)
+    info = vid.read_json_info(fname)
     vid.fetch_video(info["webpage_url"], info["format_id"])
 
     vids = glob.glob("media/*.mp4")

@@ -12,7 +12,6 @@ import podgen
 import youtube_dl
 
 SUMMARY_LEN = 250
-CROLE_URL = "https://www.youtube.com/playlist?list=PL7atuZxmT954bCkC062rKwXTvJtcqFB8i"
 FORMATS = {
     "audio": "140",
     "medium": "18",
@@ -58,26 +57,6 @@ def youtube_download(url, opts_update=None, playlist=None):
         ydl.download([url])
 
 
-def fetch_playlist_info(url, folder, format_id=FORMATS["medium"]):
-    opts_update = {
-        "format": format_id,
-        "skip_download": True,
-        "writeinfojson": True,
-    }
-    youtube_download(url, opts_update=opts_update, playlist=folder)
-
-
-def prune_playlist_info(fnames):
-    """
-    Prune the playlist metadata to ONLY the required information.
-    """
-    for fname in fnames:
-        info = parse_info(fname)
-
-        with open(fname, 'w') as fout:
-            json.dump(info, fout, separators=(',', ':'))
-
-
 def fetch_video(url, format_id):
     """
     Args:
@@ -91,27 +70,44 @@ def fetch_video(url, format_id):
     youtube_download(url, opts_update=opts_update)
 
 
-def parse_info(fname):
+def fetch_playlist_info(url, folder, format_id=FORMATS["medium"]):
+    opts_update = {
+        "format": format_id,
+        "skip_download": True,
+        "writeinfojson": True,
+    }
+    youtube_download(url, opts_update=opts_update, playlist=folder)
+
+
+def read_json_info(fname):
     """
     Parse info from the video information file.
-    Preserve only the useful information to avoid overload when printing.
 
     Returns: Dictionary containing information on podcast episode.
     """
     with open(fname) as fin:
-        info = json.load(fin)
+        return json.load(fin)
 
-    keep_keys = ["id", "upload_date", "title", "uploader", "thumbnail",
-                 "description", "duration", "webpage_url", "formats", "format_id",
-                 "playlist", "playlist_index", "filesize", "format", "fulltitle"]
-    for key in set(info.keys()) - set(keep_keys):
-        del info[key]
 
-    for fmt_val in info["formats"][:]:
-        if fmt_val["format_id"] not in FORMATS.values():
-            info["formats"].remove(fmt_val)
+def prune_playlist_info(fnames):
+    """
+    Prune the playlist metadata to ONLY the required information.
+    """
+    for fname in fnames:
+        info = read_json_info(fname)
 
-    return info
+        keep_keys = ["id", "upload_date", "title", "uploader", "thumbnail",
+                     "description", "duration", "webpage_url", "formats", "format_id",
+                     "playlist", "playlist_index", "filesize", "format", "fulltitle"]
+        for key in set(info.keys()) - set(keep_keys):
+            del info[key]
+
+        for fmt_val in info["formats"][:]:
+            if fmt_val["format_id"] not in FORMATS.values():
+                info["formats"].remove(fmt_val)
+
+        with open(fname, 'w') as fout:
+            json.dump(info, fout, separators=(',', ':'))
 
 
 def parse_date_string(date_str, timezone_offset=0):
@@ -134,21 +130,21 @@ def shorten_to_len(text, max_len):
 
     Returns the new shorter text.
     """
-    text_parts = text.split("\n")
     shorter_text = ''
+    text_parts = text.split("\n")
 
-    while len(shorter_text) < max_len:
+    while text_parts and len(shorter_text) < max_len:
         shorter_text += text_parts[0] + "\n"
         text_parts = text_parts[1:]
 
     return shorter_text.rstrip()
 
 
-def parse_episodes(fnames, series_name, format_id):
+def create_episodes(fnames, series_name, format_id):
     episodes = []
 
     for fname in fnames:
-        info = parse_info(fname)
+        info = read_json_info(fname)
         fmt_info = [x for x in info["formats"] if x['format_id'] == format_id][0]
 
         media = podgen.Media(
@@ -218,8 +214,7 @@ def create_parser():
 
 
 def main():
-    parser = create_parser()
-    args = parser.parse_args()
+    args = create_parser().parse_args()
     if args.title:
         args.title = " ".join(args.title)
     if args.description:
@@ -234,9 +229,9 @@ def main():
 
     info_files = sorted(glob.glob("media/{}/*.info.json*".format(args.series_name)))
     prune_playlist_info(info_files)
-    episodes = parse_episodes(info_files, args.series_name, FORMATS[args.format])
+    episodes = create_episodes(info_files, args.series_name, FORMATS[args.format])
 
-    info = parse_info(info_files[0])
+    info = read_json_info(info_files[0])
     persons = [podgen.Person(info['uploader'], 'N/A')]
     pod = create_podcast(episodes, args.series_name, title=args.title,
                          description=args.description, persons=persons)
