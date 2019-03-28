@@ -221,7 +221,7 @@ def main():
         args.description = " ".join(args.description)
 
     try:
-        os.mkdir("rss")
+        os.mkdir("web/rss")
     except OSError:
         pass
 

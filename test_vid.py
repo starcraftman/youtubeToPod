@@ -14,7 +14,7 @@ import vid
 PLAYLIST = "https://www.youtube.com/playlist?list=PLuGFF6RJgaMrlxVxEB7XsBerrIFgnqZIa"
 OGN_REASON = 'Skipped because it is very long. To enable set ALL_TESTS=True'
 LONG_TEST = pytest.mark.skipif(not os.environ.get('ALL_TESTS'), reason=OGN_REASON)
-LONG_TEXT = """Check out our store for official Critical Role merch: https://goo.gl/BhXLst
+TEXT_SUMMARY = """Check out our store for official Critical Role merch: https://goo.gl/BhXLst
 
 
 Catch Critical Role live Thursdays at 7PM PT on Alpha and Twitch:
@@ -61,13 +61,13 @@ Twitch: https://goo.gl/D9fsrS
 
 Listen to the Critical Role podcast: https://goo.gl/jVwPBr"""
 
-    assert vid.shorten_to_len(LONG_TEXT, 250) == expect
+    assert vid.shorten_to_len(TEXT_SUMMARY, 250) == expect
 
 
 def test_shorten_to_len_short_input():
-    expect = """Check out our store for official Critical Role merch: https://goo.gl/BhXLst"""
+    expect = "Check out our store for official Critical Role merch: https://goo.gl/BhXLst"
 
-    line = LONG_TEXT[:].split('\n')[0]
+    line = TEXT_SUMMARY[:].split('\n')[0]
     assert vid.shorten_to_len(line, 250) == expect
 
 
@@ -106,12 +106,12 @@ def test_prune_playlist_info():
 
 def test_fetch_video():
     try:
+        fnames = []
         url = "https://www.youtube.com/watch?v=1qCqP_K1fVI"
         vid.fetch_video(url, vid.FORMATS['audio'])
 
         fnames = list(pathlib.Path('web/media').glob('*.mp4'))
         assert len(fnames) == 1
     finally:
-        for fname in glob.glob('media/6 Weird*'):
-            print(fname)
+        for fname in fnames:
             os.remove(fname)
