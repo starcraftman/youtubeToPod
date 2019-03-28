@@ -3,6 +3,7 @@ Test vid.py
 """
 import glob
 import os
+import pathlib
 import shutil
 
 import podgen
@@ -107,7 +108,8 @@ def test_fetch_video():
     try:
         url = "https://www.youtube.com/watch?v=1qCqP_K1fVI"
         vid.fetch_video(url, vid.FORMATS['audio'])
-        fnames = glob.glob('media/6 Weird*')
+
+        fnames = list(pathlib.Path('web/media').glob('*.mp4'))
         assert len(fnames) == 1
     finally:
         for fname in glob.glob('media/6 Weird*'):
