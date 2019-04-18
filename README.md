@@ -15,13 +15,15 @@ Depends on:
 
 1. Install dependencies with: ```python setup.py deps```
 1. Ensure that routes in `web.py` inserted into a working flask/sanic install.
-1. Generate the required RSS feed with `vid.py`, see usage from --help.
+1. Generate the required RSS feed with `feed.py`, see usage from --help.
    You can generate an audio only feed, medium quality video or high quality video.
 1. Add the generated podcast to your podcast client.
 1. Enjoy the series.
 
 ## Disclaimer
 
-This is a proof of concept, you use it at your own liability. I am not a lawyer, I just made a thing
-and am sharing it. You in essence are reehostng the video and streaming it to clients from a server. This may
-or may not be ok depeonding on the license of the content or regional copyright laws.
+This is a proof of concept, you use it at your own liability. I am not a lawyer.
+You in essence are reehostng the video and streaming it to clients from a server.
+Depending on local copyright laws and the content's license this may vary in legality.
+
+I just wanted to see how hard it would be to make audio/video podcasts from playlists.
