@@ -11,6 +11,7 @@ import vid
 
 app = sanic.Sanic()
 app.config.RESPONSE_TIMEOUT = 600  # Downloading takes long
+MAX_CACHE = 2 * 1024 ** 3  # Total video cache, prunes oldest
 
 
 @app.route("/rss/<series>.rss")
@@ -18,10 +19,14 @@ async def get_rss(_, series):
     return await sanic.response.file('web/rss/{}.rss'.format(series))
 
 
-def remove_old_vids(fnames, keep_num):
+def remove_old_vids(fnames):
     fnames = list(reversed(sorted(fnames, key=lambda fname: os.stat(fname).st_atime)))
-    fnames = fnames[keep_num:]
-    while fnames:
+    total_bytes = 0
+    for fname in fnames:
+        total_bytes += os.stat(fname).st_size
+
+    while total_bytes > MAX_CACHE:
+        total_bytes -= os.stat(fnames[0]).st_size
         os.remove(fnames[0])
         del fnames[0]
 
@@ -36,7 +41,7 @@ async def get_video(_, series, episode):
     info = vid.read_json_info(info_file)
     vid.fetch_video(info["webpage_url"], info["format_id"])
 
-    remove_old_vids(list(media.glob('*.mp4')), 5)
+    remove_old_vids(list(media.glob('*.mp4')))
 
     vids = list(media.glob('{}.mp4'.format(info['id'])))
     return await sanic.response.file_stream(vids[0])
